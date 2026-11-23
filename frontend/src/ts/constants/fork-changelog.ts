@@ -5,6 +5,10 @@ export type ForkChange = { date: string; text: string; issue?: number };
 export const forkChangelog: ForkChange[] = [
   {
     date: "2026-11-23",
+    text: "opposite shift / stop on letter: a rejected last letter no longer ends the test",
+  },
+  {
+    date: "2026-11-23",
     text: "the rest modal has a reset button per setting (also clears an invalid fps value)",
     issue: 8326,
   },

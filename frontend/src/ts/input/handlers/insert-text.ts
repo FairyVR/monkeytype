@@ -360,6 +360,7 @@ export async function onInsertText(options: OnInsertTextParams): Promise<void> {
     ) {
       TestLogic.fail("min burst");
     } else if (
+      !removeLastChar &&
       checkIfFinished({
         goingToNextWord,
         testInputWithData: testInput + data,

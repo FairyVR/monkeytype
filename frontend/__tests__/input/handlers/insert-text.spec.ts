@@ -126,13 +126,19 @@ vi.mock("../../../src/ts/test/words-generator", () => ({
 vi.mock("../../../src/ts/input/handlers/before-insert-text", () => ({
   onBeforeInsertText: () => false,
 }));
-vi.mock("../../../src/ts/input/helpers/fail-or-finish", () => ({
-  checkIfFailedDueToDifficulty: () => false,
-  checkIfFailedDueToMinBurst: () => false,
-  checkIfFinished: () => false,
-}));
+vi.mock(
+  "../../../src/ts/input/helpers/fail-or-finish",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/ts/input/helpers/fail-or-finish")
+    >()),
+    checkIfFailedDueToDifficulty: () => false,
+    checkIfFailedDueToMinBurst: () => false,
+  }),
+);
 
 import { onInsertText } from "../../../src/ts/input/handlers/insert-text";
+import { finish } from "../../../src/ts/test/test-logic";
 import {
   resetTestEvents,
   getAllTestEvents,
@@ -433,4 +439,30 @@ describe("onInsertText - delete on error", () => {
     );
     expect(incorrect).toHaveLength(1);
   });
+
+  it.each([false, true])(
+    "does not finish on a rejected final shift (quickEnd: %s)",
+    async (quickEnd) => {
+      replaceConfig({
+        deleteOnError: "off",
+        oppositeShiftMode: "on",
+        quickEnd,
+      });
+      pushWords("aA");
+      await type("a");
+      mockState.correctShiftUsed = false;
+
+      await type("A");
+
+      expect(getInput()).toBe("a");
+      expect(getInputForWord(0)).toBe("a");
+      expect(finish).not.toHaveBeenCalled();
+
+      mockState.correctShiftUsed = true;
+      await type("A");
+
+      expect(getInput()).toBe("aA");
+      expect(finish).toHaveBeenCalledOnce();
+    },
+  );
 });
