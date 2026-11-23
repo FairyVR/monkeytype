@@ -170,9 +170,8 @@ function render(): void {
 
 export function reset(immediate = false): void {
   if (!isSafeNumber(ctx.resetTimeOut)) return;
-  delete ctx.resetTimeOut;
-
   clearTimeout(ctx.resetTimeOut);
+  delete ctx.resetTimeOut;
   body.setStyle({
     transition: "all .25s, transform 0.8s",
     transform: "translate(0,0)",
@@ -196,10 +195,8 @@ function startRender(): void {
 }
 
 function randomColor(): string {
-  const r = Math.floor(Math.random() * 256).toString(16);
-  const g = Math.floor(Math.random() * 256).toString(16);
-  const b = Math.floor(Math.random() * 256).toString(16);
-  return `#${r}${g}${b}`;
+  const hex = Math.floor(Math.random() * 0x1000000).toString(16);
+  return `#${hex.padStart(6, "0")}`;
 }
 
 /**
