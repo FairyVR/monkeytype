@@ -113,6 +113,7 @@ export function TheRestModal(): JSXElement {
 }
 
 function Setting(props: { setting: SettingDefinition }): JSXElement {
+  let inputRef: HTMLInputElement | undefined;
   const [invalid, setInvalid] = createSignal(false);
   const value = (): SettingValue => props.setting.get();
 
@@ -138,7 +139,7 @@ function Setting(props: { setting: SettingDefinition }): JSXElement {
   };
 
   return (
-    <div class="grid grid-cols-[auto_1fr_10rem] items-center gap-2">
+    <div class="grid grid-cols-[auto_1fr_10rem_auto] items-center gap-2">
       <div>{props.setting.name}</div>
       <Show
         when={props.setting.description !== undefined}
@@ -157,6 +158,7 @@ function Setting(props: { setting: SettingDefinition }): JSXElement {
         when={typeof value() === "boolean"}
         fallback={
           <input
+            ref={(el) => (inputRef = el)}
             class={cn(
               "w-full rounded border-none bg-sub-alt p-[0.5em] text-em-base leading-[1.25em] caret-main outline-none",
               "focus-visible:shadow-[0_0_0_0.1rem_var(--bg-color),0_0_0_0.2rem_var(--text-color)]",
@@ -192,6 +194,18 @@ function Setting(props: { setting: SettingDefinition }): JSXElement {
           />
         </div>
       </Show>
+      <Button
+        fa={{ icon: "fa-undo" }}
+        balloon={{
+          text: `reset ${props.setting.name} to default`,
+          position: "left",
+        }}
+        onClick={() => {
+          props.setting.reset();
+          setInvalid(false);
+          if (inputRef !== undefined) inputRef.value = String(value());
+        }}
+      />
     </div>
   );
 }
