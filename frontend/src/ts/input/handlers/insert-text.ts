@@ -352,7 +352,7 @@ export async function onInsertText(options: OnInsertTextParams): Promise<void> {
     ) {
       TestLogic.fail("difficulty");
     } else if (
-      lastInMultiOrSingle &&
+      // Check each crossed word boundary, even before the batch's final character.
       increasedWordIndex &&
       checkIfFailedDueToMinBurst({
         testInputWithData: testInput + data,

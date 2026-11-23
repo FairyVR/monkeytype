@@ -5,6 +5,10 @@ export type ForkChange = { date: string; text: string; issue?: number };
 export const forkChangelog: ForkChange[] = [
   {
     date: "2026-11-23",
+    text: "min burst is enforced on every word boundary inside multi-character input",
+  },
+  {
+    date: "2026-11-23",
     text: "expert/master: multi-character input (mobile keyboards, autocorrect) can no longer hide a mistake",
   },
   {

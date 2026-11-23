@@ -30,6 +30,7 @@ const mockState = vi.hoisted(() => ({
   activeWordIndex: 0,
   correctShiftUsed: true as boolean,
   finished: false,
+  lastBurst: null as number | null,
   // words that have scrolled off the screen and been removed from the dom
   wordsScrolledOff: new Set<number>(),
 }));
@@ -129,15 +130,6 @@ vi.mock("../../../src/ts/test/words-generator", () => ({
 vi.mock("../../../src/ts/input/handlers/before-insert-text", () => ({
   onBeforeInsertText: () => mockState.finished,
 }));
-vi.mock(
-  "../../../src/ts/input/helpers/fail-or-finish",
-  async (importOriginal) => ({
-    ...(await importOriginal<
-      typeof import("../../../src/ts/input/helpers/fail-or-finish")
-    >()),
-    checkIfFailedDueToMinBurst: () => false,
-  }),
-);
 
 import { onInsertText } from "../../../src/ts/input/handlers/insert-text";
 import { fail, finish } from "../../../src/ts/test/test-logic";
@@ -168,7 +160,7 @@ function getInput(): string {
 nav.goToNextWord.mockImplementation(async () => {
   setInput("");
   mockState.activeWordIndex++;
-  return { increasedWordIndex: true, lastBurst: null };
+  return { increasedWordIndex: true, lastBurst: mockState.lastBurst };
 });
 
 // mirrors goToPreviousWord (minus the nospace branch): step back a word and
@@ -225,6 +217,7 @@ describe("onInsertText - delete on error", () => {
     mockState.activeWordIndex = 0;
     mockState.correctShiftUsed = true;
     mockState.finished = false;
+    mockState.lastBurst = null;
     mockState.wordsScrolledOff.clear();
     setInput("");
     replaceConfig({
@@ -233,11 +226,47 @@ describe("onInsertText - delete on error", () => {
       deleteOnError: "letter",
       stopOnError: "off",
       difficulty: "normal",
+      minBurst: "off",
       strictSpace: false,
       oppositeShiftMode: "off",
       keymapMode: "off",
       blindMode: false,
     });
+  });
+
+  describe("multi-character minimum burst", () => {
+    beforeEach(() => {
+      replaceConfig({ deleteOnError: "off", minBurstCustomSpeed: 100 });
+      pushWords("hello", "world");
+    });
+
+    it.each(["fixed", "flex"] as const)(
+      "fails %s minimum burst at a boundary before the final character",
+      async (minBurst) => {
+        replaceConfig({ minBurst });
+        mockState.lastBurst = 1;
+
+        await type("hello w");
+
+        expect(fail).toHaveBeenCalledExactlyOnceWith("min burst");
+        expect(getInputForWord(0)).toBe("hello ");
+        expect(inputEventsForWord(1)).toEqual([]);
+        expect(finish).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(["fixed", "flex", "off"] as const)(
+      "accepts a boundary when %s minimum burst is satisfied or disabled",
+      async (minBurst) => {
+        replaceConfig({ minBurst });
+        mockState.lastBurst = minBurst === "off" ? 1 : 10000;
+
+        await type("hello w");
+
+        expect(fail).not.toHaveBeenCalled();
+        expect(getInput()).toBe("w");
+      },
+    );
   });
 
   describe("multi-character difficulty", () => {
