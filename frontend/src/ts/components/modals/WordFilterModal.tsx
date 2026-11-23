@@ -134,7 +134,11 @@ function filterWordList(
   const match = new RegExp("^/(?<pattern>.*?)/(?<flags>[gimydsuv]*)$").exec(
     value.regex,
   ) ?? { groups: { pattern: value.regex, flags: "" } };
-  const reglit = new RegExp(match.groups?.pattern ?? "", match.groups?.flags);
+  // drop g/y: they make test() keep lastIndex between words and skip matches
+  const reglit = new RegExp(
+    match.groups?.pattern ?? "",
+    match.groups?.flags?.replace(/[gy]/g, ""),
+  );
 
   let filterin = Misc.escapeRegExp(value.include.trim());
   filterin = filterin.replace(/\s+/gi, "|");
