@@ -5,6 +5,10 @@ export type ForkChange = { date: string; text: string; issue?: number };
 export const forkChangelog: ForkChange[] = [
   {
     date: "2026-11-23",
+    text: "expert/master: multi-character input (mobile keyboards, autocorrect) can no longer hide a mistake",
+  },
+  {
+    date: "2026-11-23",
     text: "opposite shift / stop on letter: a rejected last letter no longer ends the test",
   },
   {

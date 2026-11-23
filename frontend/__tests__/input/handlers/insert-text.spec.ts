@@ -29,6 +29,7 @@ vi.mock("../../../src/ts/input/input-element", () => ({
 const mockState = vi.hoisted(() => ({
   activeWordIndex: 0,
   correctShiftUsed: true as boolean,
+  finished: false,
   // words that have scrolled off the screen and been removed from the dom
   wordsScrolledOff: new Set<number>(),
 }));
@@ -112,7 +113,9 @@ vi.mock("../../../src/ts/states/words-render", () => ({
 }));
 vi.mock("../../../src/ts/test/test-logic", () => ({
   startTest: vi.fn(),
-  fail: vi.fn(),
+  fail: vi.fn(() => {
+    mockState.finished = true;
+  }),
   finish: vi.fn(),
   addWord: vi.fn(),
 }));
@@ -124,7 +127,7 @@ vi.mock("../../../src/ts/test/words-generator", () => ({
   areAllWordsGenerated: () => true,
 }));
 vi.mock("../../../src/ts/input/handlers/before-insert-text", () => ({
-  onBeforeInsertText: () => false,
+  onBeforeInsertText: () => mockState.finished,
 }));
 vi.mock(
   "../../../src/ts/input/helpers/fail-or-finish",
@@ -132,13 +135,12 @@ vi.mock(
     ...(await importOriginal<
       typeof import("../../../src/ts/input/helpers/fail-or-finish")
     >()),
-    checkIfFailedDueToDifficulty: () => false,
     checkIfFailedDueToMinBurst: () => false,
   }),
 );
 
 import { onInsertText } from "../../../src/ts/input/handlers/insert-text";
-import { finish } from "../../../src/ts/test/test-logic";
+import { fail, finish } from "../../../src/ts/test/test-logic";
 import {
   resetTestEvents,
   getAllTestEvents,
@@ -222,6 +224,7 @@ describe("onInsertText - delete on error", () => {
     TestWords.resetWords();
     mockState.activeWordIndex = 0;
     mockState.correctShiftUsed = true;
+    mockState.finished = false;
     mockState.wordsScrolledOff.clear();
     setInput("");
     replaceConfig({
@@ -235,6 +238,48 @@ describe("onInsertText - delete on error", () => {
       keymapMode: "off",
       blindMode: false,
     });
+  });
+
+  describe("multi-character difficulty", () => {
+    beforeEach(() => {
+      replaceConfig({ deleteOnError: "off" });
+    });
+
+    it("fails master on an error before the final character", async () => {
+      replaceConfig({ difficulty: "master" });
+      pushWords("hello", "world");
+
+      await type("xello");
+
+      expect(fail).toHaveBeenCalledExactlyOnceWith("difficulty");
+      expect(getInput()).toBe("x");
+      expect(finish).not.toHaveBeenCalled();
+    });
+
+    it("fails expert on an incorrect word before the final character", async () => {
+      replaceConfig({ difficulty: "expert" });
+      pushWords("hello", "world");
+
+      await type("hell w");
+
+      expect(fail).toHaveBeenCalledExactlyOnceWith("difficulty");
+      expect(getInputForWord(0)).toBe("hell ");
+      expect(inputEventsForWord(1)).toEqual([]);
+      expect(finish).not.toHaveBeenCalled();
+    });
+
+    it.each(["expert", "master"] as const)(
+      "accepts correct multi-character input on %s",
+      async (difficulty) => {
+        replaceConfig({ difficulty });
+        pushWords("hello", "world");
+
+        await type("hello w");
+
+        expect(fail).not.toHaveBeenCalled();
+        expect(getInput()).toBe("w");
+      },
+    );
   });
 
   describe("letter mode", () => {

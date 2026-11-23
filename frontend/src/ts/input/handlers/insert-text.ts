@@ -339,7 +339,8 @@ export async function onInsertText(options: OnInsertTextParams): Promise<void> {
     }, 0);
   }
 
-  if (!isComposing() && lastInMultiOrSingle) {
+  if (!isComposing()) {
+    // Check every character: a later correct character must not hide a failure.
     if (
       checkIfFailedDueToDifficulty({
         data,
@@ -351,6 +352,7 @@ export async function onInsertText(options: OnInsertTextParams): Promise<void> {
     ) {
       TestLogic.fail("difficulty");
     } else if (
+      lastInMultiOrSingle &&
       increasedWordIndex &&
       checkIfFailedDueToMinBurst({
         testInputWithData: testInput + data,
@@ -360,6 +362,7 @@ export async function onInsertText(options: OnInsertTextParams): Promise<void> {
     ) {
       TestLogic.fail("min burst");
     } else if (
+      lastInMultiOrSingle &&
       !removeLastChar &&
       checkIfFinished({
         goingToNextWord,
