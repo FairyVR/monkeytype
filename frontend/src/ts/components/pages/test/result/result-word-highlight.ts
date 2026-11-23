@@ -318,11 +318,9 @@ async function init(): Promise<boolean> {
 
       // Calculate inputWordEl properties relative to inputWordsContainerEl
       inputWordEl.style.left = `${wordEl.offsetLeft + PADDING_OFFSET_X - RTL_offset}px`;
-      inputWordEl.innerHTML = userInputString
-        .replace(/\t/g, "_")
-        .replace(/\n/g, "_")
-        .replace(/</g, "&lt")
-        .replace(/>/g, "&gt")
+      // textContent: no escaping, so slice can't cut an entity in half
+      inputWordEl.textContent = userInputString
+        .replace(/[\t\n]/g, "_")
         .slice(0, wordEl.childElementCount);
 
       inputWordEl.className = "inputWord";
