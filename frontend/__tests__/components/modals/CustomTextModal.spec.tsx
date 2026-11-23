@@ -125,6 +125,62 @@ describe("components/modals/CustomTextModal.tsx", () => {
     expect(CustomText.getLimitValue()).toBe(3);
   });
 
+  it("filters saved text names across both lists and clears the search on reopen", async () => {
+    localStorage.setItem(
+      "customText",
+      JSON.stringify({
+        "Short Story": { text: PIPE_TEXT, isPipeDelimiter: true },
+        Poem: { text: "story in the content" },
+      }),
+    );
+    localStorage.setItem(
+      "customTextLong",
+      JSON.stringify({
+        "Long Story": { text: "one two three", progress: 1 },
+        Novel: { text: "other words", progress: 0 },
+      }),
+    );
+
+    showModal("CustomText");
+    render(() => <CustomTextModal />);
+    fireEvent.click(screen.getByText("saved texts"));
+    const search = await screen.findByPlaceholderText("search by name");
+
+    fireEvent.input(search, { target: { value: "  sToRy  " } });
+    expect(screen.getByText("Short Story")).toBeInTheDocument();
+    expect(screen.getByText("Long Story")).toBeInTheDocument();
+    expect(screen.queryByText("Poem")).not.toBeInTheDocument();
+    expect(screen.queryByText("Novel")).not.toBeInTheDocument();
+
+    fireEvent.input(search, { target: { value: "missing" } });
+    expect(
+      screen.getByText("No matching custom texts found"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("No matching long custom texts found"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Short Story")).not.toBeInTheDocument();
+    expect(screen.queryByText("Long Story")).not.toBeInTheDocument();
+
+    fireEvent.input(search, { target: { value: "" } });
+    expect(screen.getByText("Poem")).toBeInTheDocument();
+    expect(screen.getByText("Novel")).toBeInTheDocument();
+
+    fireEvent.input(search, { target: { value: "short" } });
+    fireEvent.click(screen.getByText("Short Story"));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(textareaPlaceholder)).toHaveValue(
+        PIPE_TEXT,
+      );
+    });
+    fireEvent.click(screen.getByText("saved texts"));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("search by name")).toHaveValue("");
+      expect(screen.getByText("Poem")).toBeInTheDocument();
+      expect(screen.getByText("Novel")).toBeInTheDocument();
+    });
+  });
+
   it("previews only the first 20 matching words but sets the full list", async () => {
     showModal("CustomText");
     render(() => <CustomTextModal />);

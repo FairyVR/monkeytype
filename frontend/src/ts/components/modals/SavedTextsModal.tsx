@@ -40,6 +40,11 @@ export function SavedTextsModal(props: {
 }): JSXElement {
   const [names, setNames] = createSignal<string[]>([]);
   const [longNames, setLongNames] = createSignal<string[]>([]);
+  const [search, setSearch] = createSignal("");
+  const matchesSearch = (name: string) =>
+    name.toLowerCase().includes(search().trim().toLowerCase());
+  const filteredNames = () => names().filter(matchesSearch);
+  const filteredLongNames = () => longNames().filter(matchesSearch);
 
   // because the progress is stored in local storage,
   // we need to trigger a refresh when it changes to update the reset button state
@@ -124,14 +129,31 @@ export function SavedTextsModal(props: {
       id="SavedTexts"
       title="Saved texts"
       modalClass="max-w-[500px]"
-      beforeShow={refresh}
+      beforeShow={() => {
+        setSearch("");
+        refresh();
+      }}
     >
+      <input
+        type="search"
+        aria-label="Search saved texts by name"
+        placeholder="search by name"
+        class="w-full rounded bg-sub-alt p-2 text-text"
+        value={search()}
+        onInput={(e) => setSearch(e.currentTarget.value)}
+      />
       <div class="grid gap-2">
         <Show
-          when={names().length > 0}
-          fallback={<div class="text-sub">No saved custom texts found</div>}
+          when={filteredNames().length > 0}
+          fallback={
+            <div class="text-sub">
+              {names().length === 0
+                ? "No saved custom texts found"
+                : "No matching custom texts found"}
+            </div>
+          }
         >
-          <For each={names()}>
+          <For each={filteredNames()}>
             {(name) => (
               <div class="flex items-center gap-2">
                 <Button
@@ -162,12 +184,16 @@ export function SavedTextsModal(props: {
 
       <div class="grid gap-2">
         <Show
-          when={longNames().length > 0}
+          when={filteredLongNames().length > 0}
           fallback={
-            <div class="text-sub">No saved long custom texts found</div>
+            <div class="text-sub">
+              {longNames().length === 0
+                ? "No saved long custom texts found"
+                : "No matching long custom texts found"}
+            </div>
           }
         >
-          <Index each={longNames()}>
+          <Index each={filteredLongNames()}>
             {(name) => {
               const hasProgress = () => {
                 trackProgress();

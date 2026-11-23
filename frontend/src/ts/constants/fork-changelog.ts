@@ -5,6 +5,10 @@ export type ForkChange = { date: string; text: string; issue?: number };
 export const forkChangelog: ForkChange[] = [
   {
     date: "2026-11-23",
+    text: "saved texts modal has a search box to filter texts by name",
+  },
+  {
+    date: "2026-11-23",
     text: "word filter previews the first 20 matching words under the count",
   },
   {
