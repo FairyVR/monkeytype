@@ -125,6 +125,49 @@ describe("components/modals/CustomTextModal.tsx", () => {
     expect(CustomText.getLimitValue()).toBe(3);
   });
 
+  it("previews only the first 20 matching words but sets the full list", async () => {
+    showModal("CustomText");
+    render(() => <CustomTextModal />);
+    fireEvent.click(screen.getByText("words filter"));
+
+    await screen.findByText(`${englishLanguage.words.length} words found`);
+    expect(
+      screen.getByText(`${englishLanguage.words.slice(0, 20).join(" ")} …`),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("set"));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(textareaPlaceholder)).toHaveValue(
+        englishLanguage.words.join(" "),
+      );
+    });
+  });
+
+  it("updates the word preview and clears it for empty or invalid filters", async () => {
+    showModal("CustomText");
+    render(() => <CustomTextModal />);
+    fireEvent.click(screen.getByText("words filter"));
+
+    await screen.findByText(`${englishLanguage.words.length} words found`);
+    const regex = screen
+      .getAllByRole("textbox", { hidden: true })
+      .find((input) => input.getAttribute("name") === "regex");
+    if (regex === undefined) throw new Error("regex input not found");
+
+    fireEvent.input(regex, { target: { value: "^(the|be)$" } });
+    await screen.findByText("2 words found");
+    const preview = screen.getByText("the be");
+    expect(preview).toBeInTheDocument();
+
+    fireEvent.input(regex, { target: { value: "^no-matching-word$" } });
+    await screen.findByText("0 words found");
+    expect(preview).not.toBeInTheDocument();
+
+    fireEvent.input(regex, { target: { value: "[" } });
+    await screen.findByText("Invalid regex");
+    expect(screen.queryByText(/words found/)).not.toBeInTheDocument();
+  });
+
   it("splits sections into words when the user switches the delimiter to space", async () => {
     localStorage.setItem(
       "customText",

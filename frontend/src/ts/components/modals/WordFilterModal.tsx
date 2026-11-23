@@ -9,6 +9,7 @@ import {
   createSignal,
   JSXElement,
   Setter,
+  Show,
 } from "solid-js";
 
 import { LanguageList } from "../../constants/languages";
@@ -253,6 +254,15 @@ export function WordFilterModal(props: {
     return filterWordList(debouncedValues(), words);
   });
 
+  const previewWords = createMemo(() => {
+    const result = matchResult();
+    if (result === null || "error" in result) return "";
+    return (
+      result.words.slice(0, 20).join(" ") +
+      (result.words.length > 20 ? " …" : "")
+    );
+  });
+
   const applyPreset = async () => {
     const presetToApply = presets[preset()];
     if (presetToApply === undefined) {
@@ -414,6 +424,13 @@ export function WordFilterModal(props: {
               if ("error" in result) return result.error;
               return `${result.words.length} words found`;
             })()}
+            <Show when={previewWords()}>
+              {(words) => (
+                <div class="mt-2 wrap-anywhere" dir="auto">
+                  {words()}
+                </div>
+              )}
+            </Show>
           </div>
           <div class="text-xs text-sub">
             {
