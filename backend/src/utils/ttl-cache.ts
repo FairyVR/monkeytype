@@ -16,12 +16,20 @@ export function cacheWithTTL<T>(
 ): () => Promise<T | undefined> {
   let lastFetchTime = 0;
   let cache: T | undefined;
+  let inFlight: Promise<T> | undefined;
 
   return async () => {
-    if (lastFetchTime < Date.now() - ttlMs) {
-      lastFetchTime = Date.now();
-      cache = await fn();
-    }
-    return cache;
+    if (lastFetchTime >= Date.now() - ttlMs) return cache;
+    // concurrent callers share one fetch; only a successful fetch resets the TTL
+    inFlight ??= fn()
+      .then((value) => {
+        cache = value;
+        lastFetchTime = Date.now();
+        return value;
+      })
+      .finally(() => {
+        inFlight = undefined;
+      });
+    return inFlight;
   };
 }
