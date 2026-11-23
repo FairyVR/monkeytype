@@ -104,6 +104,7 @@ export function clearTimeouts(timeouts: (number | NodeJS.Timeout)[]): void {
     if (typeof to === "number") clearTimeout(to);
     else clearTimeout(to);
   });
+  timeouts.length = 0;
 }
 
 //https://stackoverflow.com/questions/273789/is-there-a-version-of-javascripts-string-indexof-that-allows-for-regular-expr
