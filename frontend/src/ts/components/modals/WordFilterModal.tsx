@@ -134,11 +134,16 @@ function filterWordList(
   const match = new RegExp("^/(?<pattern>.*?)/(?<flags>[gimydsuv]*)$").exec(
     value.regex,
   ) ?? { groups: { pattern: value.regex, flags: "" } };
-  // drop g/y: they make test() keep lastIndex between words and skip matches
-  const reglit = new RegExp(
-    match.groups?.pattern ?? "",
-    match.groups?.flags?.replace(/[gy]/g, ""),
-  );
+  let reglit: RegExp;
+  try {
+    // drop g/y: they make test() keep lastIndex between words and skip matches
+    reglit = new RegExp(
+      match.groups?.pattern ?? "",
+      match.groups?.flags?.replace(/[gy]/g, ""),
+    );
+  } catch {
+    return { error: "Invalid regex" };
+  }
 
   let filterin = Misc.escapeRegExp(value.include.trim());
   filterin = filterin.replace(/\s+/gi, "|");
